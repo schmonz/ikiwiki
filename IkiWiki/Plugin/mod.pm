@@ -6,7 +6,7 @@ package IkiWiki::Plugin::mod;
 use warnings;
 use strict;
 use IkiWiki 3.00;
-# use Encode;
+use Encode;
 
 sub import {
 	hook(type => "getsetup", id => "mod", call => \&getsetup);
@@ -27,6 +27,7 @@ sub htmlize (@) {
 	my $content = decode_utf8(encode_utf8($params{content}));
 	return $content if $@;
 
+	rudely_and_hackily_skip_mathescapes_problems();
 	eval q{use Mod::HTML};
 	return $content if $@;
 
@@ -34,6 +35,10 @@ sub htmlize (@) {
 		or die "Couldn't create driver for text: $!; aborting.\n";
 	$driver->setparam('startchapter', 1);
 	return $driver->do_text($content);
+}
+
+sub rudely_and_hackily_skip_mathescapes_problems {
+	system("touch mathescapes");
 }
 
 1
