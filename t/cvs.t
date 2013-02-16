@@ -30,6 +30,8 @@ sub test_web_comments {
 	# - side effect for moderated comments: after approval they
 	#   show up normally AND are still pending, too
 	# - comments.pm treats rcs_commit_staged() as returning conflicts?
+	#
+	# openid username (see git)
 }
 
 sub test_chdir_magic {
