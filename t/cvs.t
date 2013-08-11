@@ -299,16 +299,85 @@ sub test_rcs_add {
 	# XXX test for both files in the commit, and no other files
 	is_most_recent_change(\@changes, $file2, $message);
 
-	# prevent web edits from attempting to create .../CVS/foo.mdwn
-	# on case-insensitive filesystems, also prevent .../cvs/foo.mdwn
-	# unless your "CVS" is something else and we've made it configurable
-	# also want a pre-commit hook for this?
-
 	# pre-commit hook:
 	# - lcase filenames
 	# - ?
 
 	# can it assume we're under CVS control? or must it check?
+}
+
+sub test_rcs_add_special {
+	my @changes = IkiWiki::rcs_recentchanges(3);
+	is_total_number_of_changes(\@changes, 0);
+
+	# XXX loop over a table of expecteds
+
+	my $message = "add a top-level page that renders to destdir as cvs/";
+	my $file = q{cvs.mdwn};
+	add_and_commit($file, $message, qq{# \$Id\$\n* some plain ASCII text});
+	is_newly_added($file);
+	is_in_keyword_substitution_mode($file, q{-kkv});
+	@changes = IkiWiki::rcs_recentchanges(3);
+	is_total_number_of_changes(\@changes, 1);
+	is_most_recent_change(\@changes, stripext($file), $message);
+
+	$message = "add a subpage that renders to destdir as foo/CVS/";
+	$file = q{foo/CVS.mdwn};
+	add_and_commit($file, $message, qq{# \$Id\$\n* some plain ASCII text});
+	is_newly_added($file);
+	is_in_keyword_substitution_mode($file, q{-kkv});
+	@changes = IkiWiki::rcs_recentchanges(3);
+	is_total_number_of_changes(\@changes, 2);
+	is_most_recent_change(\@changes, stripext($file), $message);
+
+	$message = "add a page to srcdir under bar/cvs/";
+	$file = q{bar/cvs/dingle.mdwn};
+	add_and_commit($file, $message, qq{# \$Id\$\n* some plain ASCII text});
+	isnt_newly_added($file);
+	@changes = IkiWiki::rcs_recentchanges(3);
+	is_total_number_of_changes(\@changes, 2);
+
+	$message = "add a page to srcdir under baz/CVS/";
+	$file = q{baz/CVS/dangle.mdwn};
+	add_and_commit($file, $message, qq{# \$Id\$\n* some plain ASCII text});
+	isnt_newly_added($file);
+	@changes = IkiWiki::rcs_recentchanges(3);
+	is_total_number_of_changes(\@changes, 2);
+
+	$message = "add a page to srcdir under bar/cvs/dingle/";
+	$file = q{bar/cvs/dingle/further.mdwn};
+	add_and_commit($file, $message, qq{# \$Id\$\n* some plain ASCII text});
+	isnt_newly_added($file);
+	@changes = IkiWiki::rcs_recentchanges(3);
+	is_total_number_of_changes(\@changes, 2);
+
+	$message = "add a page to srcdir under baz/CVS/dangle";
+	$file = q{baz/CVS/dangle/further.mdwn};
+	add_and_commit($file, $message, qq{# \$Id\$\n* some plain ASCII text});
+	isnt_newly_added($file);
+	@changes = IkiWiki::rcs_recentchanges(3);
+	is_total_number_of_changes(\@changes, 2);
+
+	$message = "add a dir to srcdir as quux/cvs/";
+	$file = q{quux/cvs/};
+	can_mkdir($file);
+	IkiWiki::rcs_add($file);
+	IkiWiki::rcs_commit(
+		file => $file,
+		message => $message,
+		token => "moo",
+	);
+	# XXX expect fail
+	# XXX ooooh, why is it hanging forever! no wrapper!
+
+	# actually test this in a browser before committing!
+
+	# prevent web edits from attempting to create .../CVS/foo.mdwn
+	# on case-insensitive filesystems, also prevent .../cvs/foo.mdwn
+	# unless your "CVS" is something else and we've made it configurable
+	# also want a pre-commit hook for this?
+
+
 }
 
 sub test_rcs_remove {

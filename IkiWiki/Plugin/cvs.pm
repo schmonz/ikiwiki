@@ -172,6 +172,11 @@ sub rcs_commit (@) {
 	# else since rcs_prepedit was called.
 	my ($oldrev)=$params{token}=~/^([0-9]+)$/; # untaint
 	my $rev=cvs_info("Repository revision", "$config{srcdir}/$params{file}");
+	if (!defined $rev) {
+		warn("cvs commit failed: $params{file} not tracked");
+		return "<<<<<<<<<<<<<<<<<<<<<"; # XXX
+	}
+
 	if (defined $rev && defined $oldrev && $rev != $oldrev) {
 		# Merge their changes into the file that we've
 		# changed.
@@ -210,6 +215,10 @@ sub rcs_add ($) {
 	my @files_to_add = ($file);
 
 	until ((length($parent) == 0) || cvs_is_controlling("$config{srcdir}/$parent")){
+		if ($parent =~ /cvs/i) {	# XXX overzealous on non-OS X
+			# warn("cvs add dir $file failed: defense against CVS");
+			return;
+		}
 		push @files_to_add, $parent;
 		$parent = IkiWiki::dirname($parent);
 	}
@@ -474,7 +483,7 @@ sub cvs_info ($$) {
 
 	local $CWD = $config{srcdir};
 
-	my $info=`cvs status $file`;
+	my $info=`cvs status $file 2>/dev/null`;
 	my ($ret)=$info=~/^\s*$field:\s*(\S+)/m;
 	return $ret;
 }
