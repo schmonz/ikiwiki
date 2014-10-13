@@ -753,9 +753,14 @@ sub loadplugin ($;$) {
 				my $reason=$@;
 				error(sprintf(gettext("failed to load external plugin needed for %s plugin: %s"), $plugin, $reason));
 			}
-			import IkiWiki::Plugin::external "$dir/plugins/$plugin";
-			$loaded_plugins{$plugin}=1;
-			return 1;
+			eval { import IkiWiki::Plugin::external "$dir/plugins/$plugin" };
+			if ($@) {
+				my $reason=$@;
+				error(sprintf(gettext("failed to load external plugin %s: %s"), $plugin, $reason));
+			} else {
+				$loaded_plugins{$plugin}=1;
+				return 1;
+			}
 		}
 	}
 

@@ -8,8 +8,9 @@ use warnings;
 use strict;
 use IkiWiki 3.00;
 use RPC::XML;
-use IPC::Open2;
+use IPC::Open3;
 use IO::Handle;
+use Symbol 'gensym';
 
 my %plugins;
 
@@ -18,16 +19,18 @@ sub import {
 	my $plugin=shift;
 	return unless defined $plugin;
 
-	my ($plugin_read, $plugin_write);
-	my $pid = open2($plugin_read, $plugin_write,
+	my ($plugin_read, $plugin_write, $plugin_err);
+	$plugin_err = gensym;
+	my $pid = open3($plugin_write, $plugin_read, $plugin_err,
 		IkiWiki::possibly_foolish_untaint($plugin));
 
-	# open2 doesn't respect "use open ':utf8'"
+	# open3 doesn't respect "use open ':utf8'"
 	binmode($plugin_read, ':utf8');
 	binmode($plugin_write, ':utf8');
+	binmode($plugin_err, ':utf8');
 
 	$plugins{$plugin}={in => $plugin_read, out => $plugin_write, pid => $pid,
-		accum => ""};
+		err => $plugin_err, accum => ""};
 
 	$RPC::XML::ENCODING="utf-8";
 	$RPC::XML::FORCE_STRING_ENCODING="true";
@@ -141,6 +144,16 @@ sub rpc_call ($$;@) {
 			}
 			rpc_write($plugin->{out}, $string);
 		}
+	}
+
+	# XXX conjecture: we get here iff import failed
+	if ('import' eq $command) {
+		my $errors = "";
+		while ($_ = $plugin->{err}->getline) {
+			$errors .= $_;
+		}
+		chomp($errors);
+		error($errors);
 	}
 
 	return undef;

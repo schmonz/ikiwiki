@@ -2,22 +2,17 @@
 use warnings;
 use strict;
 
-BEGIN {
-	if (system("python -c 'import docutils.core'") != 0) {
-		eval 'use Test::More skip_all => "docutils not available"';
-	}
+use Test::More;
+
+require 't/rst_missing_modules.t';
+
+if (are_all_needed_python_modules_present()) {
+	plan tests => 3;
+} else {
+	plan skip_all => 'not all needed modules are present';
 }
 
-use Test::More tests => 3;
-
-BEGIN { use_ok("IkiWiki"); }
-
-%config=IkiWiki::defaultconfig();
-$config{srcdir}=$config{destdir}="/dev/null";
-$config{libdir}=".";
-$config{add_plugins}=[qw(rst)];
-IkiWiki::loadplugins();
-IkiWiki::checkconfig();
+can_load_plugin('rst');
 
 like(IkiWiki::htmlize("foo", "foo", "rst", "foo\n"), qr{\s*<p>foo</p>\s*});
 # regression test for [[bugs/rst fails on file containing only a number]]
