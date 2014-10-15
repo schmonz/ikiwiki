@@ -12,7 +12,8 @@ Given qr/ikiwiki site with the CGI/, sub {
 	# - Installed ikiwiki from pkgsrc
 	# - Used it to build my personal wiki (with CGI enabled)
 	# - Started bozohttpd on localhost:80 (with CGI enabled)
-	# - Configured libdir to point at this here checked-out git branch
+	# - Configured `libdir` to point at this here checked-out git branch
+	# - Configured `add_plugins` to contain my Perl (or whatever) plugin
 	#
 	# At some point, I'll want these tests to:
 	# - Not need (or use) ikiwiki software installed on the system
