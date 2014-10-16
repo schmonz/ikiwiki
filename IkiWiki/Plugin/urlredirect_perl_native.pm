@@ -6,7 +6,7 @@ use strict;
 use IkiWiki 3.00;
 
 sub import {
-	hook(type => "cgi", id => 'urlredirect_perl_native',  call => \&cgi);
+	hook(type => "cgi", id => 'urlredirect_perl_native', call => \&cgi);
 }
 
 sub urlredirect_perl_native ($) {

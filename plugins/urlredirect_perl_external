@@ -1,0 +1,176 @@
+#!/usr/pkg/bin/perl
+use warnings;
+use strict;
+
+print STDERR "urlredirect_perl_external plugin running as pid $$\n";
+
+use RPC::XML;
+use IO::Handle;
+
+sub import {
+	# XXX does this really get my hook registered?
+	rpc_call("hook", type => "cgi", id => "urlredirect_perl_external", call => "cgi");
+}
+
+sub urlredirect_perl_external ($) {
+	my $q = shift;
+
+	#rpc_call('redirect', $q, 'http://www.schmonz.com/');
+	rpc_call('error', 'wish I could redirect to http://www.schmonz.com/');
+
+	#rpc_call('terminate_cgi');
+}
+
+# first off, will this hook ever really be called? how do I know?
+sub cgi ($) {
+	# XXX this can't be the full Perl object; what exactly is in it?
+	my $cgi = shift;
+	# XXX method call probably won't work; inspect $cgi->{'.parameters'}?
+	my $do = $cgi->param('do');
+
+	#if (defined $do && $do eq 'redir') {
+		urlredirect_perl_external($cgi);
+	#}
+}
+
+# everything from here on out is stolen verbatim from plugins/externaldemo
+
+# autoflush stdout
+$| = 1;
+
+# Used to build up RPC calls as they're read from stdin.
+my $accum="";
+
+sub rpc_read {
+	# Read stdin, a line at a time, until a whole RPC call is accumulated.
+	# Parse to XML::RPC object and return.
+	while (<>) {
+		$accum.=$_;
+
+		# Kinda hackish approach to parse a single XML RPC out of the
+		# accumulated input. Perl's RPC::XML library doesn't
+		# provide a better way to do it. Relies on calls always ending
+		# with a newline, which ikiwiki's protocol requires be true.
+		if ($accum =~ /^\s*(<\?xml\s.*?<\/(?:methodCall|methodResponse)>)\n(.*)/s) {
+			$accum=$2; # the rest
+	
+			# Now parse the XML RPC.
+			my $parser;
+			eval q{
+				use RPC::XML::ParserFactory;
+				$parser = RPC::XML::ParserFactory->new;
+			};
+			if ($@) {
+				# old interface
+				eval q{
+					use RPC::XML::Parser;
+					$parser = RPC::XML::Parser->new;
+				};
+			}
+			my $r=$parser->parse($1);
+			if (! ref $r) {
+				die "error: XML RPC parse failure $r";
+			}
+			return $r;
+		}
+	}
+
+	return undef;
+}
+
+sub rpc_handle {
+	# Handle an incoming XML RPC command.
+	my $r=rpc_read();
+	if (! defined $r) {
+		return 0;
+	}
+	if ($r->isa("RPC::XML::request")) {
+		my $name=$r->name;
+		my @args=map { $_->value } @{$r->args};
+		# Dispatch the requested function. This could be
+		# done with a switch statement on the name, or
+		# whatever. I'll use eval to call the function with
+		# the name.
+		my $ret = eval $name.'(@args)';
+		die $@ if $@;
+	
+		# Now send the repsonse from the function back,
+		# followed by a newline.
+		my $resp=RPC::XML::response->new($ret);
+		$resp->serialize(\*STDOUT);
+		print "\n";
+		# stdout needs to be flushed here. If it isn't,
+		# things will deadlock. Perl flushes it
+		# automatically when $| is set.
+		return 1;
+	}
+	elsif ($r->isa("RPC::XML::response")) {
+		die "protocol error; got a response when expecting a request";
+	}
+}
+
+sub rpc_call {
+	# Make an XML RPC call and return the result.
+	my $command=shift;
+	my @params=@_;
+
+	my $req=RPC::XML::request->new($command, @params);
+	$req->serialize(\*STDOUT);
+	print "\n";
+	# stdout needs to be flushed here to prevent deadlock. Perl does it
+	# automatically when $| is set.
+	
+	my $r=rpc_read();
+	if ($r->isa("RPC::XML::response")) {
+		return $r->value->value;
+	}
+	else {
+		die "protocol error; got a request when expecting a response";
+	}
+}
+
+# Now all that's left to do is loop and handle each incoming RPC request.
+while (rpc_handle()) {
+	print STDERR "urlredirect_perl_external plugin handled RPC request\n";
+}
+
+print STDERR "urlredirect_perl_external plugin exiting as pid $$\n";
+
+__DATA__
+
+Problem #0: I've neither understood ikiwiki's XML-RPC protocol nor
+shown that the Perl implementation I've stolen really works.
+
+Solution: Prove out the example XML-RPC implementation with a simple
+plugin for the Nimble input format.
+
+Problem #1: From outside the ikiwiki process, I can't get at the
+CGI object, so I don't know when the query-string params indicate
+that I should trigger my behavior.
+
+Solution: Invent a new CGI hook where I give it the value of `do`
+I'm going to handle.
+
+Problem #2: Without the CGI object, I can't ask for the query-string
+params, so I don't know how to modulate my behavior.
+
+Solution: In my newly invented hook, when invoking the callback,
+pass along all the other already-parsed params.
+
+Problem #3: Without the CGI object, I can't simply invoke its
+`redirect()` method.
+
+Solution: In my newly invented hook, optionally pass the name of a
+Perl function to be invoked (along with args) when my callback
+completes. (Fuzzy on this one. Backup plan: try to provide an RPC
+wrapper for `IkiWiki::redirect()`?)
+
+Problem #4: From outside the ikiwiki process, I can't tell the CGI
+to exit when I'm done handling the action.
+
+Solution: In my newly invented hook, exit after invoking the callback.
+(Or else provide a wrapped `exit()` in `IkiWiki::Plugin::external`
+and invoke it over XML-RPC.)
+
+Possible problem: will ikiwiki launch me when someone hits the CGI,
+or do I need to be a daemon?
