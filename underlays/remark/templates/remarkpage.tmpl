@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><TMPL_VAR TITLE></title>
+    <meta charset="utf-8">
+    <TMPL_IF LOCAL_CSS>
+    <link rel="stylesheet" href="<TMPL_VAR BASEURL><TMPL_VAR LOCAL_CSS>" type="text/css" />
+    <TMPL_ELSE>
+    <link rel="stylesheet" href="<TMPL_VAR BASEURL>remarklocal.css" type="text/css" />
+    </TMPL_IF>
+  </head>
+  <body>
+    <textarea id="source">
+<TMPL_VAR CONTENT>
+    </textarea>
+    <script src="<TMPL_VAR BASEURL>ikiwiki/remark.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
