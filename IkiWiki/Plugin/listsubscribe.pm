@@ -36,6 +36,8 @@ sub preprocess (@) {
 		or error(gettext("list not specified"));
 	defined $config{listsubscribe}{$listname}
 		or error(sprintf(gettext("list %s not available"), $listname));
+	length $config{cgiurl}
+		or error(gettext("cgi disabled, not creating form"));
 
 	my $list_subscribe_form = template('listsubscribeform.tmpl');
 	$list_subscribe_form->param(listsubscribeaction => IkiWiki::cgiurl());

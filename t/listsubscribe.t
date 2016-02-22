@@ -12,6 +12,7 @@ sub _startup {
 	%config = IkiWiki::defaultconfig();
 	$config{srcdir} = 't/tmp';
 	$config{templatedir} = 'templates';
+	$config{cgiurl} = q{not empty};
 	$config{listsubscribe} = {
 		list_the_first => 'list-the-first-subscribe@noodles.appendage',
 		neato_list => 'foo@bar.baz',
