@@ -1,0 +1,9 @@
+<form method="get" action="<TMPL_VAR LISTSUBSCRIBEACTION>" id="listsubscribeform">
+<div id="listsubscribeform">
+<h4>Join <TMPL_VAR LISTSUBSCRIBELISTNAME></h4>
+<input type="text" id="listsubscribebox" name="listsubscribeaddress" value="" size="30" placeholder="your@email.address" />
+<input type="hidden" id="listsubscribelistname" name="listsubscribelistname" value="<TMPL_VAR LISTSUBSCRIBELISTNAME>" />
+<input type="hidden" name="do" value="listsubscribe" />
+<br /><input type="submit" value="Subscribe" size="30" />
+</div>
+</form>
