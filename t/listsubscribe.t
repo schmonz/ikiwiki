@@ -20,7 +20,7 @@ sub _startup {
 	is(IkiWiki::checkconfig(), 1);
 }
 
-sub can_error_on_preprocessing_unknown_list {
+sub unknown_list_gives_error {
 	my $output = eval {
 		IkiWiki::Plugin::listsubscribe::preprocess(
 			listname => 'list_the_zeroth',
@@ -31,7 +31,7 @@ sub can_error_on_preprocessing_unknown_list {
 	isnt($error, q{});
 }
 
-sub can_preprocess_known_list {
+sub known_list_gives_something {
 	my $output = eval {
 		IkiWiki::Plugin::listsubscribe::preprocess(
 			listname => 'list_the_first',
