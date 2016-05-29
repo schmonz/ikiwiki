@@ -43,6 +43,6 @@ sub known_list_gives_something {
 }
 
 _startup();
-can_error_on_preprocessing_unknown_list();
-can_preprocess_known_list();
+unknown_list_gives_error();
+known_list_gives_something();
 done_testing();
