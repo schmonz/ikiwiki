@@ -27,12 +27,46 @@ sub processline {
 	}
 }
 
+sub processuser_sudo {
+	my $user=shift;
+	my $ret=system("sudo", "-n", "-s", "-u", $user,
+		"/bin/sh", "-c", "--",
+		"$0", "--nonglobal", @ARGV);
+	return $ret;
+}
+
+sub processuser_su {
+	my $user=shift;
+	my $ret=system("su", $user, "-s",
+		"/bin/sh", "-c", "--",
+		"$0 --nonglobal @ARGV");
+	return $ret;
+}
+
+sub choose_command {
+	my $user=shift;
+	my $out=`su $user -s /bin/sh -c -- whoami </dev/null`;
+	chomp($out);
+	if ($user eq $out) {
+		return \&processuser_su;
+	} else {
+		return \&processuser_sudo;
+	}
+}
+
+my $processuser_fn;
+sub processuser_command {
+	my $user=shift;
+	$processuser_fn=choose_command($user) unless $processuser_fn;
+	return $processuser_fn->($user);
+}
+
 my %users;
 sub processuser {
 	my $user=shift;
 	return if $user=~/^-/ || $users{$user};
 	$users{$user}=1;
-	my $ret=system("su", $user, "-s", "/bin/sh", "-c", "--", "$0 --nonglobal @ARGV");
+	my $ret=processuser_command($user);
 	if ($ret != 0) {
 		print STDERR "warning: processing for $user failed with code $ret\n";
 	}
